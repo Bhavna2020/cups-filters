@@ -364,7 +364,10 @@ pdftops(int inputfd,         /* I - File descriptor input stream */
   */
 
   if (is_empty(filename, log, ld))
+  {
+    unlink(tempfile);
     return 0;
+  }
 
  /*
   * Read out copy counts and collate setting passed over by pdftopdf
@@ -380,33 +383,11 @@ pdftops(int inputfd,         /* I - File descriptor input stream */
   num_options = data->num_options;
   options = data->options;
 
- /*
-  * Load PPD file if needed...
-  */
-
-  if (data->ppdfile == NULL && data->ppd == NULL)
-  {
-    char *p = getenv("PPD");
-    if (p)
-      data->ppdfile = strdup(p);
-    else
-      data->ppdfile = NULL;
-  }
-
-  if (data->ppd == NULL && data->ppdfile)
-    data->ppd = ppdOpenFile(data->ppdfile);
-
   ppd = data->ppd;
 
  /*
   * Process job options...
   */
-
-  if (ppd)
-  {
-    ppdMarkDefaults(ppd);
-    ppdMarkOptions(ppd, num_options, options);
-  }
 
   if ((val = cupsGetOption("make-and-model", num_options, options)) != NULL)
   {
@@ -1705,8 +1686,7 @@ pdftops(int inputfd,         /* I - File descriptor input stream */
 
   close(outputfd);
 
-  //if (tempfile[0])
-  //unlink(tempfile);
+  unlink(tempfile);
 
   return (exit_status);
 }

@@ -104,35 +104,15 @@ parseOpts(filter_data_t *data,
   num_options = data->num_options;
   options = data->options;
 
- /*
-  * Load PPD file if needed...
-  */
-
-  if (data->ppdfile == NULL && data->ppd == NULL)
-  {
-    char *p = getenv("PPD");
-    if (p)
-      data->ppdfile = strdup(p);
-    else
-      data->ppdfile = NULL;
-  }
-
-  if (data->ppd == NULL && data->ppdfile)
-    data->ppd = ppdOpenFile(data->ppdfile);
-
   ppd = data->ppd;
 
   if (ppd == NULL && log)
       log(ld, FILTER_LOGLEVEL_DEBUG,
 	  "pclmtoraster: PPD file is not specified.");
-  if (ppd)
-    ppdMarkDefaults(ppd);
 
   if (ppd)
   {
-    ppdMarkDefaults(ppd);
-    ppdMarkOptions(ppd,num_options,options);
-    ppdRasterInterpretPPD(header,ppd,num_options,options,0);
+    ppdRasterInterpretPPD(header, ppd, num_options, options, 0);
     if (header->Duplex)
     {
       /* analyze options relevant to Duplex */
@@ -1128,6 +1108,7 @@ pclmtoraster(int inputfd,         /* I - File descriptor input stream */
   if (parseOpts(data, &pclmtoraster_data) != 0)
   {
     delete(pdf);
+    unlink(tempfile);
     return (1);
   }
 
@@ -1141,6 +1122,7 @@ pclmtoraster(int inputfd,         /* I - File descriptor input stream */
 		"pclmtoraster: Specified color format is not supported: %s",
 		strerror(errno));
     delete(pdf);
+    unlink(tempfile);
     if (pclmtoraster_data.ppd != NULL)  ppdClose(pclmtoraster_data.ppd);
     return (1);
   }
@@ -1170,6 +1152,7 @@ pclmtoraster(int inputfd,         /* I - File descriptor input stream */
 		"pclmtoraster: Can't open raster stream: %s",
 		strerror(errno));
     delete(pdf);
+    unlink(tempfile);
     if (pclmtoraster_data.ppd != NULL)  ppdClose(pclmtoraster_data.ppd);
     return (1);
   }
@@ -1195,6 +1178,7 @@ pclmtoraster(int inputfd,         /* I - File descriptor input stream */
 
   cupsRasterClose(raster);
   delete pdf;
+  unlink(tempfile);
   if (pclmtoraster_data.ppd != NULL)  ppdClose(pclmtoraster_data.ppd);
   return 0;
 }

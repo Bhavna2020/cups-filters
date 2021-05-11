@@ -338,6 +338,7 @@ imagetoraster(int inputfd,         /* I - File descriptor input stream */
 		     "imagetoraster: Unable to open temporary file.");
       }
 
+      unlink(tempfile);
       return (1);
     }
   }
@@ -357,29 +358,10 @@ imagetoraster(int inputfd,         /* I - File descriptor input stream */
   doc.Copies = data->copies;
 
  /*
-  * Load PPD file if needed...
-  */
-
-  if (data->ppdfile == NULL && data->ppd == NULL)
-  {
-    char *p = getenv("PPD");
-    if (p)
-      data->ppdfile = strdup(p);
-    else
-      data->ppdfile = NULL;
-  }
-
-  if (data->ppd == NULL && data->ppdfile)
-    data->ppd = ppdOpenFile(data->ppdfile);
-
-  ppd = data->ppd;
-
- /*
   * Process job options...
   */
 
-  ppdMarkDefaults(ppd);
-  ppdMarkOptions(ppd, num_options, options);
+  ppd = data->ppd;
   filterSetCommonOptions(ppd, num_options, options, 0,
 			 &doc.Orientation, &doc.Duplex,
 			 &doc.LanguageLevel, &doc.Color,
@@ -437,8 +419,8 @@ imagetoraster(int inputfd,         /* I - File descriptor input stream */
 
   if ((val = cupsGetOption("ppi", num_options, options)) != NULL)
   {
-    if (sscanf(val, "%dx%d", &xppi, &yppi) < 2)
-      yppi = xppi;
+    sscanf(val, "%d", &xppi);
+    yppi = xppi;
     zoom = 0.0;
   }
 
@@ -521,6 +503,8 @@ imagetoraster(int inputfd,         /* I - File descriptor input stream */
       log(ld, FILTER_LOGLEVEL_DEBUG,
 	  "imagetoraster: %s", cupsRasterErrorString());
     }
+    if (!inputseekable)
+      unlink(tempfile);
     return (1);
   }
 
@@ -651,6 +635,8 @@ imagetoraster(int inputfd,         /* I - File descriptor input stream */
         if (log) log(ld, FILTER_LOGLEVEL_DEBUG,
 		     "imagetoraster: Colorspace %d not supported.",
 		     header.cupsColorSpace);
+	if (!inputseekable)
+	  unlink(tempfile);
 	return(1);
 	break;
   }
