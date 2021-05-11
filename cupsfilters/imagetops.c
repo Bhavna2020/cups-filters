@@ -216,6 +216,7 @@ imagetops(int inputfd,         /* I - File descriptor input stream */
 		     "imagetops: Unable to open temporary file.");
       }
 
+      unlink(tempfile);
       return (1);
     }
   }
@@ -234,6 +235,8 @@ imagetops(int inputfd,         /* I - File descriptor input stream */
 
     fclose(inputfp);
 
+    if (!inputseekable)
+      unlink(tempfile);
     return (1);
   }
 
@@ -259,29 +262,10 @@ imagetops(int inputfd,         /* I - File descriptor input stream */
   num_options = data->num_options;
 
  /*
-  * Load PPD file if needed...
-  */
-
-  if (data->ppdfile == NULL && data->ppd == NULL)
-  {
-    char *p = getenv("PPD");
-    if (p)
-      data->ppdfile = strdup(p);
-    else
-      data->ppdfile = NULL;
-  }
-
-  if (data->ppd == NULL && data->ppdfile)
-    data->ppd = ppdOpenFile(data->ppdfile);
-
-  ppd = data->ppd;
-
- /*
   * Process job options...
   */
 
-  ppdMarkDefaults(ppd);
-  ppdMarkOptions(ppd, num_options, options);
+  ppd = data->ppd;
   filterSetCommonOptions(ppd, num_options, options, 0,
 			 &doc.Orientation, &doc.Duplex,
 			 &doc.LanguageLevel, &doc.Color,
@@ -366,8 +350,8 @@ imagetops(int inputfd,         /* I - File descriptor input stream */
 
   if ((val = cupsGetOption("ppi", num_options, options)) != NULL)
   {
-    if (sscanf(val, "%dx%d", &xppi, &yppi) < 2)
-      yppi = xppi;
+    sscanf(val, "%d", &xppi);
+    yppi = xppi;
     zoom = 0.0;
   }
 

@@ -806,6 +806,7 @@ imagetopdf(int inputfd,         /* I - File descriptor input stream */
 		     "imagetopdf: Unable to open temporary file.");
       }
 
+      unlink(tempfile);
       return (1);
     }
   }
@@ -823,6 +824,8 @@ imagetopdf(int inputfd,         /* I - File descriptor input stream */
     }
 
     fclose(fp);
+    if (!inputseekable)
+      unlink(tempfile);
 
     return (1);
   }
@@ -848,29 +851,10 @@ imagetopdf(int inputfd,         /* I - File descriptor input stream */
   num_options = data->num_options;
 
  /*
-  * Load PPD file if needed...
-  */
-
-  if (data->ppdfile == NULL && data->ppd == NULL)
-  {
-    char *p = getenv("PPD");
-    if (p)
-      data->ppdfile = strdup(p);
-    else
-      data->ppdfile = NULL;
-  }
-
-  if (data->ppd == NULL && data->ppdfile)
-    data->ppd = ppdOpenFile(data->ppdfile);
-
-  doc.ppd = data->ppd;
-
- /*
   * Process job options...
   */
 
-  ppdMarkDefaults(doc.ppd);
-  ppdMarkOptions(doc.ppd, num_options, options);
+  doc.ppd = data->ppd;
   filterSetCommonOptions(doc.ppd, num_options, options, 0,
 			 &doc.Orientation, &doc.Duplex,
 			 &doc.LanguageLevel, &doc.Color,
@@ -999,8 +983,8 @@ imagetopdf(int inputfd,         /* I - File descriptor input stream */
 
   if ((val = cupsGetOption("ppi", num_options, options)) != NULL)
   {
-    if (sscanf(val, "%dx%d", &xppi, &yppi) < 2)
-      yppi = xppi;
+    sscanf(val, "%d", &xppi);
+    yppi = xppi;
     zoom = 0.0;
   }
 
